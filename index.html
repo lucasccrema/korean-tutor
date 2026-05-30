@@ -1,0 +1,837 @@
+<!-- Creato il: 2026-05-30 -->
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>한국어 튜터 · Korean Tutor</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@300;400;700&family=DM+Mono:ital,wght@0,300;0,500;1,300&family=Playfair+Display:ital,wght@0,400;0,700;1,400&display=swap');
+
+  :root {
+    --bg: #0d0d0f;
+    --surface: #141416;
+    --border: #232328;
+    --accent-ko: #e8c87a;
+    --accent-it: #7ab8e8;
+    --accent-err: #e87a7a;
+    --text: #e8e6e0;
+    --text-dim: #6b6860;
+    --text-mid: #a09d96;
+    --radius: 12px;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Mono', monospace;
+    font-size: 14px;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+
+  header {
+    padding: 24px 32px 20px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: baseline;
+    gap: 16px;
+  }
+
+  header h1 {
+    font-family: 'Playfair Display', serif;
+    font-size: 22px;
+    font-weight: 400;
+    color: var(--accent-ko);
+    letter-spacing: 0.02em;
+  }
+
+  header span {
+    color: var(--text-dim);
+    font-size: 12px;
+    font-style: italic;
+  }
+
+  .status-bar {
+    padding: 8px 32px;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    gap: 24px;
+    align-items: center;
+    font-size: 11px;
+    color: var(--text-dim);
+  }
+
+  .dot {
+    width: 7px; height: 7px;
+    border-radius: 50%;
+    display: inline-block;
+    margin-right: 6px;
+    background: var(--text-dim);
+  }
+  .dot.active { background: #6bcf7f; box-shadow: 0 0 6px #6bcf7f88; animation: pulse 1.2s infinite; }
+  .dot.speaking { background: var(--accent-ko); box-shadow: 0 0 6px var(--accent-ko); animation: pulse 0.6s infinite; }
+  .dot.error { background: var(--accent-err); }
+
+  @keyframes pulse {
+    0%,100% { opacity:1; } 50% { opacity:0.4; }
+  }
+
+  #reset-key-btn {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--text-dim);
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    padding: 2px 8px;
+    border-radius: 4px;
+    cursor: pointer;
+  }
+  #reset-key-btn:hover { border-color: var(--accent-err); color: var(--accent-err); }
+
+  #voice-selector {
+    margin-left: auto;
+    display: flex;
+    gap: 12px;
+    align-items: center;
+  }
+
+  select {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    color: var(--text-mid);
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    padding: 3px 6px;
+    border-radius: 4px;
+    cursor: pointer;
+  }
+
+  .main {
+    display: flex;
+    flex: 1;
+    overflow: hidden;
+  }
+
+  #chat {
+    flex: 1;
+    overflow-y: auto;
+    padding: 24px 32px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    scrollbar-width: thin;
+    scrollbar-color: var(--border) transparent;
+  }
+
+  .msg {
+    max-width: 82%;
+    animation: fadeUp 0.3s ease;
+  }
+
+  @keyframes fadeUp {
+    from { opacity:0; transform: translateY(8px); }
+    to { opacity:1; transform: translateY(0); }
+  }
+
+  .msg.user { align-self: flex-end; text-align: right; }
+  .msg.assistant { align-self: flex-start; }
+
+  .msg-label {
+    font-size: 10px;
+    color: var(--text-dim);
+    margin-bottom: 6px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  .msg-bubble {
+    padding: 14px 18px;
+    border-radius: var(--radius);
+    line-height: 1.7;
+  }
+
+  .msg.user .msg-bubble {
+    background: #1a1a22;
+    border: 1px solid #2a2a38;
+    font-family: 'Noto Serif KR', serif;
+    font-size: 15px;
+    color: #c8d8e8;
+  }
+
+  .msg.assistant .msg-bubble {
+    background: var(--surface);
+    border: 1px solid var(--border);
+  }
+
+  /* Segmenti bilingue nel bubble */
+  .seg { display: inline; }
+  .seg-ko {
+    font-family: 'Noto Serif KR', serif;
+    font-size: 15px;
+    color: var(--accent-ko);
+  }
+  .seg-it {
+    font-family: 'Playfair Display', serif;
+    font-size: 14px;
+    font-style: italic;
+    color: var(--accent-it);
+  }
+  .seg-err {
+    font-family: 'DM Mono', monospace;
+    font-size: 13px;
+    color: var(--accent-err);
+    background: #e87a7a14;
+    border-radius: 4px;
+    padding: 0 4px;
+  }
+
+  .seg.playing {
+    background: rgba(255,255,255,0.06);
+    border-radius: 4px;
+    outline: 1px solid currentColor;
+    outline-offset: 2px;
+  }
+
+  .replay-btn {
+    margin-top: 10px;
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  .btn-small {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--text-dim);
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    padding: 4px 10px;
+    border-radius: 20px;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .btn-small:hover { border-color: var(--text-mid); color: var(--text); }
+  .btn-small.ko:hover { border-color: var(--accent-ko); color: var(--accent-ko); }
+  .btn-small.it:hover { border-color: var(--accent-it); color: var(--accent-it); }
+
+  .thinking {
+    color: var(--text-dim);
+    font-size: 12px;
+    font-style: italic;
+    animation: pulse 1s infinite;
+  }
+
+  /* Pannello errori laterale */
+  #errors-panel {
+    width: 260px;
+    border-left: 1px solid var(--border);
+    overflow-y: auto;
+    padding: 20px 16px;
+    scrollbar-width: thin;
+    scrollbar-color: var(--border) transparent;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  #errors-panel h2 {
+    font-family: 'Playfair Display', serif;
+    font-size: 13px;
+    font-weight: 400;
+    color: var(--text-dim);
+    letter-spacing: 0.05em;
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 8px;
+    margin-bottom: 4px;
+  }
+
+  .error-card {
+    background: #1a1010;
+    border: 1px solid #3a2020;
+    border-radius: 8px;
+    padding: 10px 12px;
+    animation: fadeUp 0.3s ease;
+  }
+
+  .error-card .wrong {
+    color: var(--accent-err);
+    font-family: 'Noto Serif KR', serif;
+    font-size: 14px;
+    text-decoration: line-through;
+    opacity: 0.7;
+  }
+
+  .error-card .correct {
+    color: #8cdfb0;
+    font-family: 'Noto Serif KR', serif;
+    font-size: 14px;
+    margin-top: 2px;
+  }
+
+  .error-card .note {
+    color: var(--text-mid);
+    font-size: 11px;
+    margin-top: 6px;
+    line-height: 1.5;
+    font-style: italic;
+  }
+
+  /* Input area */
+  #input-area {
+    padding: 16px 32px 20px;
+    border-top: 1px solid var(--border);
+    background: var(--surface);
+    display: flex;
+    gap: 12px;
+    align-items: flex-end;
+  }
+
+  #mic-btn {
+    width: 48px; height: 48px;
+    border-radius: 50%;
+    border: 2px solid var(--border);
+    background: var(--bg);
+    color: var(--text-dim);
+    font-size: 20px;
+    cursor: pointer;
+    flex-shrink: 0;
+    transition: all 0.2s;
+    display: flex; align-items: center; justify-content: center;
+  }
+
+  #mic-btn.recording {
+    border-color: var(--accent-err);
+    color: var(--accent-err);
+    box-shadow: 0 0 16px #e87a7a44;
+    animation: pulse 0.8s infinite;
+  }
+
+  #mic-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+
+  #text-input {
+    flex: 1;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    color: var(--text);
+    font-family: 'Noto Serif KR', serif;
+    font-size: 15px;
+    padding: 12px 16px;
+    resize: none;
+    min-height: 48px;
+    max-height: 120px;
+    outline: none;
+    transition: border-color 0.15s;
+  }
+  #text-input:focus { border-color: #3a3a48; }
+  #text-input::placeholder { color: var(--text-dim); font-family: 'DM Mono', monospace; font-size: 13px; }
+
+  #send-btn {
+    width: 48px; height: 48px;
+    border-radius: 50%;
+    border: none;
+    background: #1e1e2a;
+    color: var(--text-mid);
+    font-size: 18px;
+    cursor: pointer;
+    flex-shrink: 0;
+    transition: all 0.2s;
+    display: flex; align-items: center; justify-content: center;
+  }
+  #send-btn:hover { background: #2a2a3a; color: var(--text); }
+  #send-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+
+  .empty-state {
+    margin: auto;
+    text-align: center;
+    color: var(--text-dim);
+  }
+  .empty-state .ko { font-family: 'Noto Serif KR', serif; font-size: 32px; color: #2a2a32; margin-bottom: 12px; }
+  .empty-state p { font-size: 12px; line-height: 1.8; }
+
+  #api-key-modal {
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,0.85);
+    display: flex; align-items: center; justify-content: center;
+    z-index: 100;
+  }
+
+  .modal-box {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 32px;
+    max-width: 400px;
+    width: 90%;
+  }
+
+  .modal-box h2 {
+    font-family: 'Playfair Display', serif;
+    font-size: 18px;
+    color: var(--accent-ko);
+    margin-bottom: 8px;
+  }
+
+  .modal-box p { color: var(--text-mid); font-size: 12px; line-height: 1.7; margin-bottom: 16px; }
+
+  .modal-box input {
+    width: 100%;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--text);
+    font-family: 'DM Mono', monospace;
+    font-size: 13px;
+    padding: 10px 14px;
+    outline: none;
+    margin-bottom: 12px;
+  }
+
+  .modal-box button {
+    width: 100%;
+    background: #1e1e2a;
+    border: 1px solid var(--border);
+    color: var(--text);
+    font-family: 'DM Mono', monospace;
+    font-size: 13px;
+    padding: 10px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background 0.15s;
+  }
+  .modal-box button:hover { background: #2a2a3a; }
+
+  .legend {
+    display: flex; gap: 16px; flex-wrap: wrap;
+    font-size: 11px;
+    padding: 6px 32px;
+    border-bottom: 1px solid var(--border);
+    background: var(--bg);
+  }
+  .legend span { color: var(--text-dim); display: flex; align-items: center; gap: 5px; }
+  .legend .dot-ko { width:8px;height:8px;border-radius:50%;background:var(--accent-ko);display:inline-block; }
+  .legend .dot-it { width:8px;height:8px;border-radius:50%;background:var(--accent-it);display:inline-block; }
+  .legend .dot-er { width:8px;height:8px;border-radius:50%;background:var(--accent-err);display:inline-block; }
+</style>
+</head>
+<body>
+
+<!-- API KEY MODAL -->
+<div id="api-key-modal">
+  <div class="modal-box">
+    <h2>한국어 튜터</h2>
+    <p>Inserisci la tua API key Anthropic per iniziare. Non viene salvata sul server — rimane solo in memoria nella sessione.</p>
+    <input type="password" id="api-key-input" placeholder="sk-ant-..." autocomplete="off" />
+    <button id="api-key-confirm">Inizia →</button>
+  </div>
+</div>
+
+<header>
+  <h1>한국어 튜터</h1>
+  <span>Parla coreano · ricevi feedback bilingue</span>
+</header>
+
+<div class="status-bar">
+  <span><span class="dot" id="mic-dot"></span><span id="mic-status">microfono inattivo</span></span>
+  <span><span class="dot" id="tts-dot"></span><span id="tts-status">sintesi vocale pronta</span></span>
+  <button id="reset-key-btn" title="Dimentica API key salvata" onclick="localStorage.removeItem('kt_api_key');location.reload();">🔑 cambia chiave</button>
+  <div id="voice-selector">
+    <label style="color:var(--text-dim)">voce KO</label>
+    <select id="voice-ko"></select>
+    <label style="color:var(--text-dim)">voce IT</label>
+    <select id="voice-it"></select>
+  </div>
+</div>
+
+<div class="legend">
+  <span><span class="dot-ko"></span> coreano</span>
+  <span><span class="dot-it"></span> italiano</span>
+  <span><span class="dot-er"></span> correzione errori</span>
+</div>
+
+<div class="main">
+  <div id="chat">
+    <div class="empty-state" id="empty-state">
+      <div class="ko">말해보세요</div>
+      <p>Premi il microfono e parla in coreano.<br>Riceverai feedback in italiano + coreano,<br>con ogni lingua letta dalla voce giusta.</p>
+    </div>
+  </div>
+  <div id="errors-panel">
+    <h2>📋 Errori della sessione</h2>
+  </div>
+</div>
+
+<div id="input-area">
+  <button id="mic-btn" title="Tieni premuto per parlare">🎤</button>
+  <textarea id="text-input" placeholder="oppure scrivi in coreano..." rows="1"></textarea>
+  <button id="send-btn" title="Invia">↑</button>
+</div>
+
+<script>
+// ─── STATO ───────────────────────────────────────────────
+let API_KEY = '';
+let voices = [];
+let voiceKo = null, voiceIt = null;
+let recognition = null;
+let isRecording = false;
+let isSpeaking = false;
+let speechQueue = [];
+let currentUtterance = null;
+
+// ─── INIT API KEY ─────────────────────────────────────────
+const savedKey = localStorage.getItem('kt_api_key');
+if (savedKey && savedKey.startsWith('sk-')) {
+  API_KEY = savedKey;
+  document.getElementById('api-key-modal').style.display = 'none';
+  initVoices();
+  initSpeechRecognition();
+} else {
+  document.getElementById('api-key-input').focus();
+}
+
+document.getElementById('api-key-confirm').onclick = () => {
+  const k = document.getElementById('api-key-input').value.trim();
+  if (!k.startsWith('sk-')) { alert('Chiave non valida'); return; }
+  API_KEY = k;
+  localStorage.setItem('kt_api_key', k);
+  document.getElementById('api-key-modal').style.display = 'none';
+  initVoices();
+  initSpeechRecognition();
+};
+document.getElementById('api-key-input').addEventListener('keydown', e => {
+  if (e.key === 'Enter') document.getElementById('api-key-confirm').click();
+});
+
+// ─── VOCI TTS ─────────────────────────────────────────────
+function initVoices() {
+  const load = () => {
+    voices = speechSynthesis.getVoices();
+    const selKo = document.getElementById('voice-ko');
+    const selIt = document.getElementById('voice-it');
+    selKo.innerHTML = '';
+    selIt.innerHTML = '';
+
+    const koVoices = voices.filter(v => v.lang.startsWith('ko'));
+    const itVoices = voices.filter(v => v.lang.startsWith('it'));
+
+    koVoices.forEach((v, i) => {
+      const o = new Option(v.name, i); selKo.appendChild(o);
+    });
+    itVoices.forEach((v, i) => {
+      const o = new Option(v.name, i); selIt.appendChild(o);
+    });
+
+    voiceKo = koVoices[0] || null;
+    voiceIt = itVoices[0] || null;
+
+    selKo.onchange = () => { voiceKo = koVoices[selKo.value] || null; };
+    selIt.onchange = () => { voiceIt = itVoices[selIt.value] || null; };
+
+    setTTSStatus(voiceKo && voiceIt ? 'pronta' : 'voci non trovate', !voiceKo || !voiceIt);
+  };
+  if (speechSynthesis.getVoices().length) load();
+  else speechSynthesis.onvoiceschanged = load;
+}
+
+// ─── STT ──────────────────────────────────────────────────
+function initSpeechRecognition() {
+  const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SpeechRec) { setMicStatus('STT non supportato', true); return; }
+
+  recognition = new SpeechRec();
+  recognition.lang = 'ko-KR';
+  recognition.continuous = false;
+  recognition.interimResults = false;
+
+  recognition.onstart = () => {
+    isRecording = true;
+    document.getElementById('mic-btn').classList.add('recording');
+    setMicStatus('ascolto in corso…');
+    document.getElementById('mic-dot').classList.add('active');
+  };
+
+  recognition.onresult = e => {
+    const transcript = e.results[0][0].transcript;
+    document.getElementById('text-input').value = transcript;
+    stopRecording();
+    sendMessage(transcript);
+  };
+
+  recognition.onerror = e => {
+    stopRecording();
+    if (e.error !== 'no-speech') setMicStatus('errore: ' + e.error, true);
+  };
+
+  recognition.onend = () => stopRecording();
+}
+
+function stopRecording() {
+  isRecording = false;
+  document.getElementById('mic-btn').classList.remove('recording');
+  document.getElementById('mic-dot').classList.remove('active');
+  setMicStatus('microfono inattivo');
+}
+
+const micBtn = document.getElementById('mic-btn');
+micBtn.addEventListener('click', () => {
+  if (!recognition) { setMicStatus('STT non disponibile', true); return; }
+  if (isRecording) { recognition.stop(); return; }
+  document.getElementById('text-input').value = '';
+  recognition.start();
+});
+
+// ─── INVIO TESTO ──────────────────────────────────────────
+document.getElementById('send-btn').onclick = () => {
+  const t = document.getElementById('text-input').value.trim();
+  if (t) sendMessage(t);
+};
+document.getElementById('text-input').addEventListener('keydown', e => {
+  if (e.key === 'Enter' && !e.shiftKey) {
+    e.preventDefault();
+    const t = document.getElementById('text-input').value.trim();
+    if (t) sendMessage(t);
+  }
+});
+
+// ─── LOGICA PRINCIPALE ────────────────────────────────────
+async function sendMessage(text) {
+  document.getElementById('empty-state')?.remove();
+  document.getElementById('text-input').value = '';
+  document.getElementById('send-btn').disabled = true;
+  document.getElementById('mic-btn').disabled = true;
+
+  appendMessage('user', [{ type: 'ko', text }]);
+
+  const thinkingEl = appendThinking();
+
+  const systemPrompt = `Sei un tutor di coreano per un italiano. 
+L'utente ti parla in coreano. Il tuo compito:
+1. Correggi eventuali errori grammaticali o lessicali
+2. Spiega cosa ha detto in italiano
+3. Continua la conversazione in coreano
+
+Rispondi SEMPRE con un JSON strutturato così (nessun testo fuori dal JSON):
+{
+  "segments": [
+    { "lang": "it", "text": "testo in italiano" },
+    { "lang": "ko", "text": "testo in coreano" }
+  ],
+  "errors": [
+    { "wrong": "testo sbagliato", "correct": "testo corretto", "note": "spiegazione breve in italiano" }
+  ]
+}
+
+Regole per segments:
+- Inizia con un segmento "it" che spiega cosa ha detto l'utente e corregge eventuali errori (se ce ne sono)
+- Aggiungi segmenti "ko" per le frasi coreane della tua risposta
+- Alterna "it" e "ko" secondo il flusso naturale della risposta
+- Ogni segmento "ko" può essere seguito da un segmento "it" che lo traduce
+- errors: lista vuota [] se non ci sono errori
+
+Esempio di output valido per "안녕하세요, 저는 이탈리아에서 왔어요":
+{
+  "segments": [
+    { "lang": "it", "text": "Hai detto: Ciao, vengo dall'Italia. Ottimo!" },
+    { "lang": "ko", "text": "안녕하세요! 이탈리아는 어떤 나라예요?" },
+    { "lang": "it", "text": "Ciao! Com'è l'Italia?" }
+  ],
+  "errors": []
+}`;
+
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': API_KEY,
+        'anthropic-version': '2023-06-01',
+        'anthropic-dangerous-direct-browser-access': 'true'
+      },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 1000,
+        system: systemPrompt,
+        messages: [{ role: 'user', content: text }]
+      })
+    });
+
+    const data = await res.json();
+    thinkingEl.remove();
+
+    if (data.error) throw new Error(data.error.message);
+
+    const raw = data.content[0].text.replace(/```json|```/g, '').trim();
+    let parsed;
+    try { parsed = JSON.parse(raw); }
+    catch { parsed = { segments: [{ lang: 'it', text: raw }], errors: [] }; }
+
+    const msgEl = appendMessage('assistant', parsed.segments);
+
+    if (parsed.errors && parsed.errors.length > 0) {
+      parsed.errors.forEach(addErrorCard);
+    }
+
+    speakSegments(parsed.segments, msgEl);
+
+  } catch(err) {
+    thinkingEl?.remove();
+    appendMessage('assistant', [{ lang: 'it', text: '⚠ Errore: ' + err.message }]);
+  }
+
+  document.getElementById('send-btn').disabled = false;
+  document.getElementById('mic-btn').disabled = false;
+}
+
+// ─── UI ───────────────────────────────────────────────────
+function appendMessage(role, segments) {
+  const chat = document.getElementById('chat');
+  const div = document.createElement('div');
+  div.className = 'msg ' + role;
+
+  const label = document.createElement('div');
+  label.className = 'msg-label';
+  label.textContent = role === 'user' ? '나 (io)' : '튜터';
+  div.appendChild(label);
+
+  const bubble = document.createElement('div');
+  bubble.className = 'msg-bubble';
+
+  segments.forEach((seg, i) => {
+    const span = document.createElement('span');
+    span.className = 'seg seg-' + (seg.lang || seg.type);
+    span.dataset.index = i;
+    span.textContent = seg.text;
+    bubble.appendChild(span);
+    if (i < segments.length - 1) bubble.appendChild(document.createTextNode(' '));
+  });
+
+  div.appendChild(bubble);
+
+  if (role === 'assistant') {
+    const replayDiv = document.createElement('div');
+    replayDiv.className = 'replay-btn';
+
+    const allBtn = document.createElement('button');
+    allBtn.className = 'btn-small';
+    allBtn.textContent = '▶ riascolta tutto';
+    allBtn.onclick = () => speakSegments(segments, div);
+    replayDiv.appendChild(allBtn);
+
+    const koSegs = segments.filter(s => (s.lang || s.type) === 'ko');
+    if (koSegs.length) {
+      const koBtn = document.createElement('button');
+      koBtn.className = 'btn-small ko';
+      koBtn.textContent = '▶ solo coreano';
+      koBtn.onclick = () => speakSegments(koSegs, div);
+      replayDiv.appendChild(koBtn);
+    }
+
+    const itSegs = segments.filter(s => (s.lang || s.type) === 'it');
+    if (itSegs.length) {
+      const itBtn = document.createElement('button');
+      itBtn.className = 'btn-small it';
+      itBtn.textContent = '▶ solo italiano';
+      itBtn.onclick = () => speakSegments(itSegs, div);
+      replayDiv.appendChild(itBtn);
+    }
+
+    div.appendChild(replayDiv);
+  }
+
+  chat.appendChild(div);
+  chat.scrollTop = chat.scrollHeight;
+  return div;
+}
+
+function appendThinking() {
+  const chat = document.getElementById('chat');
+  const div = document.createElement('div');
+  div.className = 'msg assistant';
+  div.innerHTML = '<div class="thinking">튜터가 생각하는 중…</div>';
+  chat.appendChild(div);
+  chat.scrollTop = chat.scrollHeight;
+  return div;
+}
+
+function addErrorCard(err) {
+  const panel = document.getElementById('errors-panel');
+  const card = document.createElement('div');
+  card.className = 'error-card';
+  card.innerHTML = `
+    <div class="wrong">${err.wrong}</div>
+    <div class="correct">→ ${err.correct}</div>
+    <div class="note">${err.note}</div>
+  `;
+  panel.appendChild(card);
+}
+
+// ─── TTS BILINGUE ─────────────────────────────────────────
+function speakSegments(segments, msgEl) {
+  speechSynthesis.cancel();
+  speechQueue = [];
+
+  segments.forEach((seg, i) => {
+    const lang = seg.lang || seg.type;
+    const voice = lang === 'ko' ? voiceKo : voiceIt;
+    if (!voice) return;
+
+    const spans = msgEl ? msgEl.querySelectorAll('.seg') : [];
+    const span = spans[i] || null;
+
+    speechQueue.push({ text: seg.text, voice, span });
+  });
+
+  playNextInQueue();
+}
+
+function playNextInQueue() {
+  if (speechQueue.length === 0) {
+    setTTSStatus('pronta');
+    document.getElementById('tts-dot').classList.remove('speaking');
+    return;
+  }
+
+  const { text, voice, span } = speechQueue.shift();
+  const utt = new SpeechSynthesisUtterance(text);
+  utt.voice = voice;
+  utt.lang = voice.lang;
+  utt.rate = voice.lang.startsWith('ko') ? 0.85 : 0.95;
+
+  document.getElementById('tts-dot').classList.add('speaking');
+  setTTSStatus('pronuncia: ' + (voice.lang.startsWith('ko') ? '한국어' : 'italiano'));
+
+  if (span) {
+    span.classList.add('playing');
+    utt.onend = () => {
+      span.classList.remove('playing');
+      playNextInQueue();
+    };
+    utt.onerror = () => {
+      span.classList.remove('playing');
+      playNextInQueue();
+    };
+  } else {
+    utt.onend = playNextInQueue;
+    utt.onerror = playNextInQueue;
+  }
+
+  speechSynthesis.speak(utt);
+}
+
+// ─── STATUS ───────────────────────────────────────────────
+function setMicStatus(msg, err = false) {
+  document.getElementById('mic-status').textContent = msg;
+  document.getElementById('mic-dot').className = 'dot' + (err ? ' error' : '');
+}
+function setTTSStatus(msg, err = false) {
+  document.getElementById('tts-status').textContent = msg;
+  document.getElementById('tts-dot').className = 'dot' + (err ? ' error' : '');
+}
+</script>
+</body>
+</html>
